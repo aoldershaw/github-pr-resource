@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v28/github"
@@ -44,7 +45,7 @@ type Github interface {
 	ListModifiedFiles(int) ([]string, error)
 	PostComment(int, string) error
 	UpdateCommitStatus(string, string, string, string, string, string) error
-	DeletePreviousComments(int) error
+	DeletePreviousComments(int, string) error
 }
 
 // GithubClient for handling requests to the Github V3 and V4 APIs.
@@ -323,7 +324,7 @@ func (m *GithubClient) UpdateCommitStatus(commitRef, baseContext, statusContext,
 	return err
 }
 
-func (m *GithubClient) DeletePreviousComments(prNumber int) error {
+func (m *GithubClient) DeletePreviousComments(prNumber int, bodyMatcherForDelete string) error {
 	var getComments struct {
 		Viewer struct {
 			Login string
@@ -338,6 +339,7 @@ func (m *GithubClient) DeletePreviousComments(prNumber int) error {
 							Author     struct {
 								Login string
 							}
+							Body string
 						}
 					}
 				} `graphql:"comments(last:$commentsLast)"`
@@ -358,6 +360,14 @@ func (m *GithubClient) DeletePreviousComments(prNumber int) error {
 
 	for _, e := range getComments.Repository.PullRequest.Comments.Edges {
 		if e.Node.Author.Login == getComments.Viewer.Login {
+			regex := regexp.MustCompile(bodyMatcherForDelete)
+			if regex.MatchString(e.Node.Body) {
+				_, err := m.V3.Issues.DeleteComment(context.TODO(), m.Owner, m.Repository, e.Node.DatabaseId)
+				if err != nil {
+					return err
+				}
+			}
+
 			_, err := m.V3.Issues.DeleteComment(context.TODO(), m.Owner, m.Repository, e.Node.DatabaseId)
 			if err != nil {
 				return err
