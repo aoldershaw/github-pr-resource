@@ -28,6 +28,18 @@ func Put(request PutRequest, github resource.Github, inputDir string) (*PutRespo
 		return nil, fmt.Errorf("failed to unmarshal version from file: %v", err)
 	}
 
+	originalVersion := version
+	prNumber := request.Source.Number
+
+	// Override version if set.
+	if (request.Params.OverrideVersionCommit != "" && request.Params.OverrideVersionPR == 0) || (request.Params.OverrideVersionPR != 0 && request.Params.OverrideVersionCommit == "") {
+		return nil, fmt.Errorf("`override_version_pr` and `override_version_commit` must both be set if either is set")
+	}
+	if request.Params.OverrideVersionPR != 0 {
+		prNumber = request.Params.OverrideVersionPR
+		version.Ref = request.Params.OverrideVersionCommit
+	}
+
 	// Metadata available after a GET step.
 	var metadata resource.Metadata
 	content, err = ioutil.ReadFile(filepath.Join(path, "metadata.json"))
@@ -47,8 +59,6 @@ func Put(request PutRequest, github resource.Github, inputDir string) (*PutRespo
 		}
 	}
 
-	prNumber := request.Source.Number
-
 	// Delete previous comments if specified
 	if request.Params.DeletePreviousComments {
 		err = github.DeletePreviousComments(prNumber)
@@ -66,7 +76,7 @@ func Put(request PutRequest, github resource.Github, inputDir string) (*PutRespo
 	}
 
 	return &PutResponse{
-		Version:  version,
+		Version:  originalVersion,
 		Metadata: metadata,
 	}, nil
 }
@@ -90,6 +100,8 @@ type PutParameters struct {
 	Status                 string `json:"status"`
 	Comment                string `json:"comment"`
 	DeletePreviousComments bool   `json:"delete_previous_comments"`
+	OverrideVersionPR      int    `json:"override_version_pr"`
+	OverrideVersionCommit  string `json:"override_version_commit"`
 }
 
 func (p *PutParameters) Validate() error {
