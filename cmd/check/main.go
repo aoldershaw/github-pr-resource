@@ -79,12 +79,18 @@ func checkPR(stdin []byte) {
 		log.Fatalf("failed to create temp dir: %v", err)
 	}
 
+	// github client for checking labels
+	github, err := resource.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
+	if err != nil {
+		log.Fatalf("failed to create github manager: %v", err)
+	}
+
 	// We never need git-lfs when we check for new commits, so always disable it.
 	git, err := resource.NewGitClient(request.Source.CommonConfig, true, repoDir, os.Stderr)
 	if err != nil {
 		log.Fatalf("failed to create git manager: %v", err)
 	}
-	response, err := pr.Check(request, git)
+	response, err := pr.Check(request, git, github)
 	if err != nil {
 		log.Fatalf("check failed: %v", err)
 	}

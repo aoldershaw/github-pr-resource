@@ -204,6 +204,13 @@ func (m *GithubClient) GetPullRequest(prNumber int, commitRef string) (*PullRequ
 						}
 					}
 				} `graphql:"commits(last:$commitsLast)"`
+				Labels struct {
+					Edges []struct {
+						Node struct {
+							LabelObject
+						}
+					}
+				} `graphql:"labels(first:$labelsFirst)"`
 			} `graphql:"pullRequest(number:$prNumber)"`
 		} `graphql:"repository(owner:$repositoryOwner,name:$repositoryName)"`
 	}
@@ -213,6 +220,7 @@ func (m *GithubClient) GetPullRequest(prNumber int, commitRef string) (*PullRequ
 		"repositoryName":  githubv4.String(m.Repository),
 		"prNumber":        githubv4.Int(prNumber),
 		"commitsLast":     githubv4.Int(100),
+		"labelsFirst":     githubv4.Int(100),
 	}
 
 	// TODO: Pagination - in case someone pushes > 100 commits before the build has time to start :p
@@ -220,12 +228,17 @@ func (m *GithubClient) GetPullRequest(prNumber int, commitRef string) (*PullRequ
 		return nil, err
 	}
 
+	labels := make([]LabelObject, len(query.Repository.PullRequest.Labels.Edges))
+	for _, l := range query.Repository.PullRequest.Labels.Edges {
+		labels = append(labels, l.Node.LabelObject)
+	}
 	for _, c := range query.Repository.PullRequest.Commits.Edges {
 		if c.Node.Commit.OID == commitRef {
 			// Return as soon as we find the correct ref.
 			return &PullRequest{
 				PullRequestObject: query.Repository.PullRequest.PullRequestObject,
 				Tip:               c.Node.Commit,
+				Labels:            labels,
 			}, nil
 		}
 	}

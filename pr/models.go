@@ -16,6 +16,7 @@ type Source struct {
 	Paths         []string `json:"paths"`
 	IgnorePaths   []string `json:"ignore_paths"`
 	DisableCISkip bool     `json:"disable_ci_skip"`
+	Labels        []string `json:"labels"`
 }
 
 // Validate the source configuration.
