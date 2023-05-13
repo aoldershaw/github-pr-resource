@@ -34,6 +34,10 @@ Loop:
 			continue
 		}
 
+		if p.Number <= request.Source.PRNumbersHigherThan {
+			continue
+		}
+
 		// Filter pull request if the BaseBranch does not match the one specified in source
 		if request.Source.BaseBranch != "" {
 			// Occasionally, github will prefix the baseRefName with
