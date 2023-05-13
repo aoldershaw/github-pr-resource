@@ -21,6 +21,7 @@ type Source struct {
 	IgnoreDrafts            bool                        `json:"ignore_drafts"`
 	BaseBranch              string                      `json:"base_branch"`
 	RequiredReviewApprovals int                         `json:"required_review_approvals"`
+	PRNumbersHigherThan     int                         `json:"pr_numbers_higher_than"`
 	Labels                  []string                    `json:"labels"`
 	States                  []githubv4.PullRequestState `json:"states"`
 }
