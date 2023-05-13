@@ -61,7 +61,7 @@ func Put(request PutRequest, github resource.Github, inputDir string) (*PutRespo
 
 	// Delete previous comments if specified
 	if request.Params.DeletePreviousComments {
-		err = github.DeletePreviousComments(prNumber)
+		err = github.DeletePreviousComments(prNumber, request.Params.BodyMatcherForDelete)
 		if err != nil {
 			return nil, fmt.Errorf("failed to delete previous comments: %v", err)
 		}
@@ -100,6 +100,7 @@ type PutParameters struct {
 	Status                 string `json:"status"`
 	Comment                string `json:"comment"`
 	DeletePreviousComments bool   `json:"delete_previous_comments"`
+	BodyMatcherForDelete   string `json:"body_matcher_for_delete"`
 	OverrideVersionPR      int    `json:"override_version_pr"`
 	OverrideVersionCommit  string `json:"override_version_commit"`
 }
