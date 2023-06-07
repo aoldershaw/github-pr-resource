@@ -9,3 +9,5 @@ bin/task
 
 # Editor
 .idea/
+
+vendor/

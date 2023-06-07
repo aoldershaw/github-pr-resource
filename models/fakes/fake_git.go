@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	resource "github.com/aoldershaw/github-pr-resource"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
 )
 
 type FakeGit struct {
@@ -21,13 +21,14 @@ type FakeGit struct {
 	checkoutReturnsOnCall map[int]struct {
 		result1 error
 	}
-	FetchStub        func(string, int, int, bool) error
+	FetchStub        func(string, int, int, bool, bool) error
 	fetchMutex       sync.RWMutex
 	fetchArgsForCall []struct {
 		arg1 string
 		arg2 int
 		arg3 int
 		arg4 bool
+		arg5 bool
 	}
 	fetchReturns struct {
 		result1 error
@@ -46,10 +47,10 @@ type FakeGit struct {
 	gitCryptUnlockReturnsOnCall map[int]struct {
 		result1 error
 	}
-	InitStub        func(string) error
+	InitStub        func(*string) error
 	initMutex       sync.RWMutex
 	initArgsForCall []struct {
-		arg1 string
+		arg1 *string
 	}
 	initReturns struct {
 		result1 error
@@ -96,6 +97,22 @@ type FakeGit struct {
 	}
 	rebaseReturnsOnCall map[int]struct {
 		result1 error
+	}
+	RevListStub        func(*string, []string, []string, bool) ([]string, error)
+	revListMutex       sync.RWMutex
+	revListArgsForCall []struct {
+		arg1 *string
+		arg2 []string
+		arg3 []string
+		arg4 bool
+	}
+	revListReturns struct {
+		result1 []string
+		result2 error
+	}
+	revListReturnsOnCall map[int]struct {
+		result1 []string
+		result2 error
 	}
 	RevParseStub        func(string) (string, error)
 	revParseMutex       sync.RWMutex
@@ -176,7 +193,7 @@ func (fake *FakeGit) CheckoutReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGit) Fetch(arg1 string, arg2 int, arg3 int, arg4 bool) error {
+func (fake *FakeGit) Fetch(arg1 string, arg2 int, arg3 int, arg4 bool, arg5 bool) error {
 	fake.fetchMutex.Lock()
 	ret, specificReturn := fake.fetchReturnsOnCall[len(fake.fetchArgsForCall)]
 	fake.fetchArgsForCall = append(fake.fetchArgsForCall, struct {
@@ -184,11 +201,12 @@ func (fake *FakeGit) Fetch(arg1 string, arg2 int, arg3 int, arg4 bool) error {
 		arg2 int
 		arg3 int
 		arg4 bool
-	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("Fetch", []interface{}{arg1, arg2, arg3, arg4})
+		arg5 bool
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("Fetch", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.fetchMutex.Unlock()
 	if fake.FetchStub != nil {
-		return fake.FetchStub(arg1, arg2, arg3, arg4)
+		return fake.FetchStub(arg1, arg2, arg3, arg4, arg5)
 	}
 	if specificReturn {
 		return ret.result1
@@ -203,17 +221,17 @@ func (fake *FakeGit) FetchCallCount() int {
 	return len(fake.fetchArgsForCall)
 }
 
-func (fake *FakeGit) FetchCalls(stub func(string, int, int, bool) error) {
+func (fake *FakeGit) FetchCalls(stub func(string, int, int, bool, bool) error) {
 	fake.fetchMutex.Lock()
 	defer fake.fetchMutex.Unlock()
 	fake.FetchStub = stub
 }
 
-func (fake *FakeGit) FetchArgsForCall(i int) (string, int, int, bool) {
+func (fake *FakeGit) FetchArgsForCall(i int) (string, int, int, bool, bool) {
 	fake.fetchMutex.RLock()
 	defer fake.fetchMutex.RUnlock()
 	argsForCall := fake.fetchArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
 }
 
 func (fake *FakeGit) FetchReturns(result1 error) {
@@ -299,11 +317,11 @@ func (fake *FakeGit) GitCryptUnlockReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeGit) Init(arg1 string) error {
+func (fake *FakeGit) Init(arg1 *string) error {
 	fake.initMutex.Lock()
 	ret, specificReturn := fake.initReturnsOnCall[len(fake.initArgsForCall)]
 	fake.initArgsForCall = append(fake.initArgsForCall, struct {
-		arg1 string
+		arg1 *string
 	}{arg1})
 	fake.recordInvocation("Init", []interface{}{arg1})
 	fake.initMutex.Unlock()
@@ -323,13 +341,13 @@ func (fake *FakeGit) InitCallCount() int {
 	return len(fake.initArgsForCall)
 }
 
-func (fake *FakeGit) InitCalls(stub func(string) error) {
+func (fake *FakeGit) InitCalls(stub func(*string) error) {
 	fake.initMutex.Lock()
 	defer fake.initMutex.Unlock()
 	fake.InitStub = stub
 }
 
-func (fake *FakeGit) InitArgsForCall(i int) string {
+func (fake *FakeGit) InitArgsForCall(i int) *string {
 	fake.initMutex.RLock()
 	defer fake.initMutex.RUnlock()
 	argsForCall := fake.initArgsForCall[i]
@@ -546,6 +564,82 @@ func (fake *FakeGit) RebaseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeGit) RevList(arg1 *string, arg2 []string, arg3 []string, arg4 bool) ([]string, error) {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	var arg3Copy []string
+	if arg3 != nil {
+		arg3Copy = make([]string, len(arg3))
+		copy(arg3Copy, arg3)
+	}
+	fake.revListMutex.Lock()
+	ret, specificReturn := fake.revListReturnsOnCall[len(fake.revListArgsForCall)]
+	fake.revListArgsForCall = append(fake.revListArgsForCall, struct {
+		arg1 *string
+		arg2 []string
+		arg3 []string
+		arg4 bool
+	}{arg1, arg2Copy, arg3Copy, arg4})
+	fake.recordInvocation("RevList", []interface{}{arg1, arg2Copy, arg3Copy, arg4})
+	fake.revListMutex.Unlock()
+	if fake.RevListStub != nil {
+		return fake.RevListStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.revListReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeGit) RevListCallCount() int {
+	fake.revListMutex.RLock()
+	defer fake.revListMutex.RUnlock()
+	return len(fake.revListArgsForCall)
+}
+
+func (fake *FakeGit) RevListCalls(stub func(*string, []string, []string, bool) ([]string, error)) {
+	fake.revListMutex.Lock()
+	defer fake.revListMutex.Unlock()
+	fake.RevListStub = stub
+}
+
+func (fake *FakeGit) RevListArgsForCall(i int) (*string, []string, []string, bool) {
+	fake.revListMutex.RLock()
+	defer fake.revListMutex.RUnlock()
+	argsForCall := fake.revListArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeGit) RevListReturns(result1 []string, result2 error) {
+	fake.revListMutex.Lock()
+	defer fake.revListMutex.Unlock()
+	fake.RevListStub = nil
+	fake.revListReturns = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeGit) RevListReturnsOnCall(i int, result1 []string, result2 error) {
+	fake.revListMutex.Lock()
+	defer fake.revListMutex.Unlock()
+	fake.RevListStub = nil
+	if fake.revListReturnsOnCall == nil {
+		fake.revListReturnsOnCall = make(map[int]struct {
+			result1 []string
+			result2 error
+		})
+	}
+	fake.revListReturnsOnCall[i] = struct {
+		result1 []string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeGit) RevParse(arg1 string) (string, error) {
 	fake.revParseMutex.Lock()
 	ret, specificReturn := fake.revParseReturnsOnCall[len(fake.revParseArgsForCall)]
@@ -626,6 +720,8 @@ func (fake *FakeGit) Invocations() map[string][][]interface{} {
 	defer fake.pullMutex.RUnlock()
 	fake.rebaseMutex.RLock()
 	defer fake.rebaseMutex.RUnlock()
+	fake.revListMutex.RLock()
+	defer fake.revListMutex.RUnlock()
 	fake.revParseMutex.RLock()
 	defer fake.revParseMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
@@ -647,4 +743,4 @@ func (fake *FakeGit) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ resource.Git = new(FakeGit)
+var _ models.Git = new(FakeGit)

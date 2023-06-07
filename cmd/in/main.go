@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	resource "github.com/aoldershaw/github-pr-resource"
-	"github.com/aoldershaw/github-pr-resource/pr"
-	"github.com/aoldershaw/github-pr-resource/prlist"
+	models "github.com/cloudfoundry-community/github-pr-instances-resource/models"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/pr"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/prlist"
 )
 
 type Request struct {
@@ -76,12 +76,12 @@ func getPR(stdin []byte, outputDir string) {
 		log.Fatalf("invalid source configuration: %v", err)
 	}
 
-	github, err := resource.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
+	github, err := models.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
 	if err != nil {
 		log.Fatalf("failed to create github manager: %v", err)
 	}
 
-	git, err := resource.NewGitClient(request.Source.CommonConfig, request.Source.DisableGitLFS, outputDir, os.Stderr)
+	git, err := models.NewGitClient(request.Source.CommonConfig, request.Source.DisableGitLFS, outputDir, os.Stderr)
 	if err != nil {
 		log.Fatalf("failed to create git manager: %v", err)
 	}

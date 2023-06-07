@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	resource "github.com/aoldershaw/github-pr-resource"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
 	"github.com/shurcooL/githubv4"
 )
 
 // Source represents the configuration for the resource.
 type Source struct {
-	resource.CommonConfig
-	resource.GithubConfig
+	models.CommonConfig
+	models.GithubConfig
 	Paths                   []string                    `json:"paths"`
 	IgnorePaths             []string                    `json:"ignore_paths"`
 	DisableCISkip           bool                        `json:"disable_ci_skip"`
@@ -21,6 +21,7 @@ type Source struct {
 	IgnoreDrafts            bool                        `json:"ignore_drafts"`
 	BaseBranch              string                      `json:"base_branch"`
 	RequiredReviewApprovals int                         `json:"required_review_approvals"`
+	GitCryptKey             string                      `json:"git_crypt_key"`
 	Labels                  []string                    `json:"labels"`
 	States                  []githubv4.PullRequestState `json:"states"`
 }
@@ -59,7 +60,7 @@ type Version struct {
 }
 
 // NewVersion constructs a new Version.
-func NewVersion(prs []*resource.PullRequest) Version {
+func NewVersion(prs []*models.PullRequest) Version {
 	numbers := make([]int, len(prs))
 	for i, pr := range prs {
 		numbers[i] = pr.Number

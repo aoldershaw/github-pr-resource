@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"strings"
 
-	resource "github.com/aoldershaw/github-pr-resource"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
 	"github.com/shurcooL/githubv4"
 )
 
-func Check(request CheckRequest, manager resource.Github) (CheckResponse, error) {
-	var pulls []*resource.PullRequest
+func Check(request CheckRequest, manager models.Github) (CheckResponse, error) {
+	var pulls []*models.PullRequest
 	var err error
 	// Filter out pull request if it does not have a filtered state
 	filterStates := []githubv4.PullRequestState{githubv4.PullRequestStateOpen}
@@ -26,7 +26,7 @@ func Check(request CheckRequest, manager resource.Github) (CheckResponse, error)
 
 	disableSkipCI := request.Source.DisableCISkip
 
-	var validPRs []*resource.PullRequest
+	var validPRs []*models.PullRequest
 Loop:
 	for _, p := range pulls {
 		// [ci skip]/[skip ci] in Pull request title
@@ -124,12 +124,15 @@ Loop:
 	}
 
 	version := NewVersion(validPRs)
+
 	if request.Version == nil {
 		return CheckResponse{version}, nil
 	}
+
 	if version.PRs == request.Version.PRs {
 		return CheckResponse{*request.Version}, nil
 	}
+
 	return CheckResponse{*request.Version, version}, nil
 }
 

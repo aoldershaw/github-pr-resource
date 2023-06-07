@@ -2,7 +2,7 @@ version: '2'
 
 vars:
   BUILD_DIR: build
-  DOCKER_REPO: aoldershaw/github-pr-resource
+  DOCKER_REPO: tasruntime/github-pr-instances-resource
 
 tasks:
   default:

@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	resource "github.com/aoldershaw/github-pr-resource"
-	"github.com/aoldershaw/github-pr-resource/pr"
+	models "github.com/cloudfoundry-community/github-pr-instances-resource/models"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/pr"
 )
 
 type Request struct {
@@ -52,7 +52,7 @@ func putPR(stdin []byte, sourceDir string) {
 	if err := request.Source.Validate(); err != nil {
 		log.Fatalf("invalid source configuration: %s", err)
 	}
-	github, err := resource.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
+	github, err := models.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
 	if err != nil {
 		log.Fatalf("failed to create github manager: %s", err)
 	}

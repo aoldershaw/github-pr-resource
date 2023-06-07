@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
-	resource "github.com/aoldershaw/github-pr-resource"
-	"github.com/aoldershaw/github-pr-resource/fakes"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models/fakes"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/pr"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/test_helpers"
 	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,148 +18,166 @@ func TestPut(t *testing.T) {
 
 	tests := []struct {
 		description string
-		source      resource.Source
-		version     resource.Version
-		parameters  resource.PutParameters
-		pullRequest *resource.PullRequest
+		source      pr.Source
+		version     pr.Version
+		parameters  pr.PutParameters
+		pullRequest *models.PullRequest
 	}{
 		{
 			description: "put with no parameters does nothing",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters:  resource.PutParameters{},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			parameters:  pr.PutParameters{},
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can set status on a commit",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status: "success",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can provide a custom context for the status",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status:  "failure",
 				Context: "build",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can provide a custom base context for the status",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status:      "failure",
 				BaseContext: "concourse-ci-custom",
 				Context:     "build",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can provide a custom target url for the status",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status:    "failure",
 				TargetURL: "https://targeturl.com/concourse",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can provide a custom description for the status",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status:      "failure",
 				Description: "Concourse CI build",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can comment on the pull request",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				Number: 1,
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Comment: "comment",
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can delete previous comments made on the pull request",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				Number: 1,
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				DeletePreviousComments: true,
 			},
-			pullRequest: createTestPR(1, "master", false, false, 0, []string{}, false, githubv4.PullRequestStateOpen),
+			pullRequest: test_helpers.CreateTestPR(1, "master", false, false, 0, []string{}, false, githubv4.PullRequestStateOpen),
 		},
 	}
 
@@ -170,17 +189,17 @@ func TestPut(t *testing.T) {
 			git := new(fakes.FakeGit)
 			git.RevParseReturns("sha", nil)
 
-			dir := createTestDirectory(t)
+			dir := test_helpers.CreateTestDirectory(t)
 			defer os.RemoveAll(dir)
 
 			// Run get so we have version and metadata for the put request
 			// (This is tested in in_test.go)
-			getInput := resource.GetRequest{Source: tc.source, Version: tc.version, Params: resource.GetParameters{}}
-			_, err := resource.Get(getInput, github, git, dir)
+			getInput := pr.GetRequest{Source: tc.source, Version: tc.version, Params: pr.GetParameters{}}
+			_, err := pr.Get(getInput, github, git, dir)
 			require.NoError(t, err)
 
-			putInput := resource.PutRequest{Source: tc.source, Params: tc.parameters}
-			output, err := resource.Put(putInput, github, dir)
+			putInput := pr.PutRequest{Source: tc.source, Params: tc.parameters}
+			output, err := pr.Put(putInput, github, dir)
 
 			// Validate output
 			if assert.NoError(t, err) {
@@ -191,7 +210,7 @@ func TestPut(t *testing.T) {
 			if tc.parameters.Status != "" {
 				if assert.Equal(t, 1, github.UpdateCommitStatusCallCount()) {
 					commit, baseContext, context, status, targetURL, description := github.UpdateCommitStatusArgsForCall(0)
-					assert.Equal(t, tc.version.Commit, commit)
+					assert.Equal(t, tc.version.Ref, commit)
 					assert.Equal(t, tc.parameters.BaseContext, baseContext)
 					assert.Equal(t, tc.parameters.Context, context)
 					assert.Equal(t, tc.parameters.TargetURL, targetURL)
@@ -203,7 +222,7 @@ func TestPut(t *testing.T) {
 			if tc.parameters.Comment != "" {
 				if assert.Equal(t, 1, github.PostCommentCallCount()) {
 					pr, comment := github.PostCommentArgsForCall(0)
-					assert.Equal(t, tc.version.PR, pr)
+					assert.Equal(t, tc.pullRequest.Number, pr)
 					assert.Equal(t, tc.parameters.Comment, comment)
 				}
 			}
@@ -211,7 +230,7 @@ func TestPut(t *testing.T) {
 			if tc.parameters.DeletePreviousComments {
 				if assert.Equal(t, 1, github.DeletePreviousCommentsCallCount()) {
 					pr := github.DeletePreviousCommentsArgsForCall(0)
-					assert.Equal(t, tc.version.PR, pr)
+					assert.Equal(t, tc.pullRequest.Number, pr)
 				}
 			}
 		})
@@ -228,67 +247,73 @@ func TestVariableSubstitution(t *testing.T) {
 
 	tests := []struct {
 		description       string
-		source            resource.Source
-		version           resource.Version
-		parameters        resource.PutParameters
+		source            pr.Source
+		version           pr.Version
+		parameters        pr.PutParameters
 		expectedComment   string
 		expectedTargetURL string
-		pullRequest       *resource.PullRequest
+		pullRequest       *models.PullRequest
 	}{
 
 		{
 			description: "we can substitute environment variables for Comment",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Comment: fmt.Sprintf("$%s", variableName),
 			},
 			expectedComment: variableValue,
-			pullRequest:     createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest:     test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we can substitute environment variables for TargetURL",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Status:    "failure",
 				TargetURL: fmt.Sprintf("%s$%s", variableURL, variableName),
 			},
 			expectedTargetURL: fmt.Sprintf("%s%s", variableURL, variableValue),
-			pullRequest:       createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest:       test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 
 		{
 			description: "we do not substitute variables other then concourse build metadata",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: pr.Source{
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
 			},
-			version: resource.Version{
-				PR:            "pr1",
-				Commit:        "commit1",
-				CommittedDate: time.Time{},
+			version: pr.Version{
+				Ref: "commit1",
 			},
-			parameters: resource.PutParameters{
+			parameters: pr.PutParameters{
 				Comment: "$THIS_IS_NOT_SUBSTITUTED",
 			},
 			expectedComment: "$THIS_IS_NOT_SUBSTITUTED",
-			pullRequest:     createTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+			pullRequest:     test_helpers.CreateTestPR(1, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 		},
 	}
 
@@ -300,12 +325,12 @@ func TestVariableSubstitution(t *testing.T) {
 			git := new(fakes.FakeGit)
 			git.RevParseReturns("sha", nil)
 
-			dir := createTestDirectory(t)
+			dir := test_helpers.CreateTestDirectory(t)
 			defer os.RemoveAll(dir)
 
 			// Run get so we have version and metadata for the put request
-			getInput := resource.GetRequest{Source: tc.source, Version: tc.version, Params: resource.GetParameters{}}
-			_, err := resource.Get(getInput, github, git, dir)
+			getInput := pr.GetRequest{Source: tc.source, Version: tc.version, Params: pr.GetParameters{}}
+			_, err := pr.Get(getInput, github, git, dir)
 			require.NoError(t, err)
 
 			oldValue := os.Getenv(variableName)
@@ -313,8 +338,8 @@ func TestVariableSubstitution(t *testing.T) {
 
 			os.Setenv(variableName, variableValue)
 
-			putInput := resource.PutRequest{Source: tc.source, Params: tc.parameters}
-			_, err = resource.Put(putInput, github, dir)
+			putInput := pr.PutRequest{Source: tc.source, Params: tc.parameters}
+			_, err = pr.Put(putInput, github, dir)
 
 			if tc.parameters.TargetURL != "" {
 				if assert.Equal(t, 1, github.UpdateCommitStatusCallCount()) {

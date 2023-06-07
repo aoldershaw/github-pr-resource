@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	resource "github.com/aoldershaw/github-pr-resource"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
 )
 
-func Get(request GetRequest, github resource.Github, git resource.Git, outputDir string) (*GetResponse, error) {
+func Get(request GetRequest, github models.Github, git models.Git, outputDir string) (*GetResponse, error) {
 	if request.Params.SkipDownload {
 		return &GetResponse{Version: request.Version}, nil
 	}
@@ -42,7 +42,7 @@ func Get(request GetRequest, github resource.Github, git resource.Git, outputDir
 	}
 
 	// Create the metadata
-	var metadata resource.Metadata
+	var metadata models.Metadata
 	metadata.Add("pr", strconv.Itoa(pull.Number))
 	metadata.Add("title", pull.Title)
 	metadata.Add("url", pull.URL)
@@ -140,6 +140,6 @@ type GetRequest struct {
 }
 
 type GetResponse struct {
-	Version  Version           `json:"version"`
-	Metadata resource.Metadata `json:"metadata,omitempty"`
+	Version  Version         `json:"version"`
+	Metadata models.Metadata `json:"metadata,omitempty"`
 }

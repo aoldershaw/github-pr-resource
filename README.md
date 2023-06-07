@@ -1,3 +1,8 @@
+## This was forked from the original [aoldershaw/github-pr-resource](https://github.com/aoldershaw/github-pr-resource)
+to add an additional security check when looking at PR approvals. 
+
+You can find it on Dockerhub as the `tasruntime/github-pr-instances-resource` image.
+
 ## Github PR resource
 
 [graphql-api]: https://developer.github.com/v4
@@ -96,7 +101,6 @@ for a single PR.
 | `paths`                     | No       | `["terraform/*/*.tf"]`           | Only produce new versions for commits that include changes to files that match one or more glob patterns or prefixes. Note: this differs from `source.paths` when listing PRs in that it applies on a commit-by-commit basis, whereas the former applies for the full PR.                   |
 | `ignore_paths`              | No       | `[".ci/"]`                       | Inverse of the above. Pattern syntax is documented in [filepath.Match](https://golang.org/pkg/path/filepath/#Match), or a path prefix can be specified (e.g. `.ci/` will match everything in the `.ci` directory).                                                                          |
 | `disable_ci_skip`           | No       | `true`                           | Disable ability to skip builds with `[ci skip]` and `[skip ci]` in the commit message.                                                                                                                                                                                                      |
-| `git_crypt_key`             | No       | `AEdJVENSWVBUS0VZAAAAA...`       | Base64 encoded git-crypt key. Setting this will unlock / decrypt the repository with git-crypt. To get the key simply execute `git-crypt export-key -- - | base64` in an encrypted repository.                                                                                             |
 | `disable_git_lfs`           | No       | `true`                           | Disable Git LFS, skipping an attempt to convert pointers of files tracked into their corresponding objects when checked out into a working copy.                                                                                                                                           |
 | `skip_ssl_verification`     | No       | `true`                           | Disable SSL/TLS certificate validation on API clients. Use with care!                                                                                                                                                                                                                       |
 
@@ -165,7 +169,7 @@ requested version and the metadata emitted by `get` are available to your tasks 
 
 The information in `metadata.json` is also available as individual files in the `.git/resource` directory, e.g. the `base_sha`
 is available as `.git/resource/base_sha`. For a complete list of available (individual) metadata files, please check the code
-[here](https://github.com/aoldershaw/github-pr-resource/blob/master/pr/in.go#45).
+[here](https://github.com/cloudfoundry-community/github-pr-instances-resource/blob/master/pr/in.go#45).
 
 When specifying `skip_download` the pull request volume mounted to subsequent tasks will be empty, which is a problem
 when you set e.g. the pending status before running the actual tests. The workaround for this is to use an alias for
@@ -181,7 +185,7 @@ params:
 get_params: {skip_download: true}
 ```
 
-git-crypt encrypted repositories will automatically be decrypted when the `git_crypt_key` is set in the source configuration.
+**NOTE:** git-crypt encrypted repositories are currently unsupported.
 
 Note that, should you retrigger a build in the hopes of testing the last commit to a PR against a newer version of
 the base, Concourse will reuse the volume (i.e. not trigger a new `get`) if it still exists, which can produce
@@ -206,7 +210,7 @@ See https://concourse-ci.org/implementing-resource-types.html#resource-metadata 
 
 ## Example
 
-Unlike the [original resource][original-resource], usage of `aoldershaw/github-pr-resource`
+Unlike the [original resource][original-resource], usage of `tasruntime/github-pr-resource`
 requires two pipeline templates.
 
 1. There is one "parent" pipeline that track changes to the list of PRs and
@@ -225,7 +229,7 @@ resource_types:
 - name: pull-request
   type: registry-image
   source:
-    repository: aoldershaw/github-pr-resource
+    repository: tasruntime/github-pr-resource
 
 resources:
 - name: pull-requests
@@ -261,7 +265,7 @@ resource_types:
 - name: pull-request
   type: registry-image
   source:
-    repository: aoldershaw/github-pr-resource
+    repository: tasruntime/github-pr-resource
 
 resources:
 - name: pull-request

@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	resource "github.com/aoldershaw/github-pr-resource"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
 )
 
-func Put(request PutRequest, github resource.Github, inputDir string) (*PutResponse, error) {
+func Put(request PutRequest, github models.Github, inputDir string) (*PutResponse, error) {
 	if err := request.Params.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid parameters: %s", err)
 	}
@@ -29,7 +29,7 @@ func Put(request PutRequest, github resource.Github, inputDir string) (*PutRespo
 	}
 
 	// Metadata available after a GET step.
-	var metadata resource.Metadata
+	var metadata models.Metadata
 	content, err = ioutil.ReadFile(filepath.Join(path, "metadata.json"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read metadata from path: %v", err)
@@ -77,8 +77,8 @@ type PutRequest struct {
 }
 
 type PutResponse struct {
-	Version  Version           `json:"version"`
-	Metadata resource.Metadata `json:"metadata,omitempty"`
+	Version  Version         `json:"version"`
+	Metadata models.Metadata `json:"metadata,omitempty"`
 }
 
 type PutParameters struct {

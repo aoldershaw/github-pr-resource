@@ -7,9 +7,9 @@ import (
 	"log"
 	"os"
 
-	resource "github.com/aoldershaw/github-pr-resource"
-	"github.com/aoldershaw/github-pr-resource/pr"
-	"github.com/aoldershaw/github-pr-resource/prlist"
+	models "github.com/cloudfoundry-community/github-pr-instances-resource/models"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/pr"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/prlist"
 )
 
 type Request struct {
@@ -48,7 +48,7 @@ func checkPRList(stdin []byte) {
 	if err := request.Source.Validate(); err != nil {
 		log.Fatalf("invalid source configuration: %v", err)
 	}
-	github, err := resource.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
+	github, err := models.NewGithubClient(request.Source.CommonConfig, request.Source.GithubConfig)
 	if err != nil {
 		log.Fatalf("failed to create github manager: %v", err)
 	}
@@ -80,7 +80,7 @@ func checkPR(stdin []byte) {
 	}
 
 	// We never need git-lfs when we check for new commits, so always disable it.
-	git, err := resource.NewGitClient(request.Source.CommonConfig, true, repoDir, os.Stderr)
+	git, err := models.NewGitClient(request.Source.CommonConfig, true, repoDir, os.Stderr)
 	if err != nil {
 		log.Fatalf("failed to create git manager: %v", err)
 	}

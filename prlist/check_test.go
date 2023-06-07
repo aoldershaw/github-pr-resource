@@ -2,264 +2,334 @@ package prlist_test
 
 import (
 	"testing"
+	"time"
 
-	resource "github.com/aoldershaw/github-pr-resource"
-	"github.com/aoldershaw/github-pr-resource/fakes"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/models/fakes"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/prlist"
+	"github.com/cloudfoundry-community/github-pr-instances-resource/test_helpers"
 	"github.com/shurcooL/githubv4"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	testPullRequests = []*resource.PullRequest{
-		createTestPR(1, "master", true, false, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(2, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(3, "master", false, false, 0, nil, true, githubv4.PullRequestStateOpen),
-		createTestPR(4, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(5, "master", false, true, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(6, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(7, "develop", false, false, 0, []string{"enhancement"}, false, githubv4.PullRequestStateOpen),
-		createTestPR(8, "master", false, false, 1, []string{"wontfix"}, false, githubv4.PullRequestStateOpen),
-		createTestPR(9, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
-		createTestPR(10, "master", false, false, 0, nil, false, githubv4.PullRequestStateClosed),
-		createTestPR(11, "master", false, false, 0, nil, false, githubv4.PullRequestStateMerged),
-		createTestPR(12, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+	testPullRequests = []*models.PullRequest{
+		test_helpers.CreateTestPR(1, "master", true, false, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(2, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(3, "master", false, false, 0, nil, true, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(4, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(5, "master", false, true, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(6, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(7, "develop", false, false, 0, []string{"enhancement"}, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(8, "master", false, false, 1, []string{"wontfix"}, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(9, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
+		test_helpers.CreateTestPR(10, "master", false, false, 0, nil, false, githubv4.PullRequestStateClosed),
+		test_helpers.CreateTestPR(11, "master", false, false, 0, nil, false, githubv4.PullRequestStateMerged),
+		test_helpers.CreateTestPR(12, "master", false, false, 0, nil, false, githubv4.PullRequestStateOpen),
 	}
 )
 
 func TestCheck(t *testing.T) {
 	tests := []struct {
 		description  string
-		source       resource.Source
-		version      resource.Version
+		source       prlist.Source
+		version      *prlist.Version
 		files        [][]string
-		pullRequests []*resource.PullRequest
-		expected     resource.CheckResponse
+		pullRequests []*models.PullRequest
+		expected     prlist.CheckResponse
 	}{
 		{
 			description: "check returns the latest version if there is no previous",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version:      resource.Version{},
+			version:      nil,
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[1,2,3,4,5,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check returns the previous version when its still latest",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version:      resource.NewVersion(testPullRequests[1]),
-			pullRequests: testPullRequests,
+			version:      &prlist.Version{PRs: "[2]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
+			pullRequests: testPullRequests[1:2],
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[2]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check returns all new versions since the last",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 			},
-			version:      resource.NewVersion(testPullRequests[3]),
+			version:      &prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[2]),
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[1,2,3,4,5,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check will only return versions that match the specified paths",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				Paths:       []string{"terraform/*/*.tf", "terraform/*/*/*.tf"},
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				Paths: []string{"terraform/*/*.tf", "terraform/*/*/*.tf"},
 			},
-			version:      resource.NewVersion(testPullRequests[3]),
+			version:      &prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
 			files: [][]string{
 				{"README.md", "travis.yml"},
 				{"terraform/modules/ecs/main.tf", "README.md"},
 				{"terraform/modules/variables.tf", "travis.yml"},
 			},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[2]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[2,3]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check will skip versions which only match the ignore paths",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				IgnorePaths: []string{"*.md", "*.yml"},
 			},
-			version:      resource.NewVersion(testPullRequests[3]),
+			version:      &prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
 			files: [][]string{
-				{"README.md", "travis.yml"},
-				{"terraform/modules/ecs/main.tf", "README.md"},
-				{"terraform/modules/variables.tf", "travis.yml"},
+				{"README.md", "travis.yml"},                      // Applies to PR 1
+				{"terraform/modules/ecs/main.tf", "README.md"},   // Applies to PR 2
+				{"terraform/modules/variables.tf", "travis.yml"}, // Applies to PR 3
+				// Subsequent calls will be empty
 			},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[2]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[2,3]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check correctly ignores [skip ci] when specified",
-			source: resource.Source{
-				Repository:    "itsdalmo/test-repository",
-				AccessToken:   "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				DisableCISkip: true,
 			},
-			version:      resource.NewVersion(testPullRequests[1]),
+			version:      &prlist.Version{PRs: "[2]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[0]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[2]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[1,2,3,4,5,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check correctly ignores drafts when drafts are ignored",
-			source: resource.Source{
-				Repository:   "itsdalmo/test-repository",
-				AccessToken:  "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				IgnoreDrafts: true,
 			},
-			version:      resource.NewVersion(testPullRequests[3]),
+			version:      &prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[1,2,4,5,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check does not ignore drafts when drafts are not ignored",
-			source: resource.Source{
-				Repository:   "itsdalmo/test-repository",
-				AccessToken:  "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				IgnoreDrafts: false,
 			},
-			version:      resource.NewVersion(testPullRequests[3]),
+			version:      &prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[2]),
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[4]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[1,2,3,4,5,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check correctly ignores cross repo pull requests",
-			source: resource.Source{
-				Repository:   "itsdalmo/test-repository",
-				AccessToken:  "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				DisableForks: true,
 			},
-			version:      resource.NewVersion(testPullRequests[5]),
+			version:      &prlist.Version{PRs: "[6]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[3]),
-				resource.NewVersion(testPullRequests[2]),
-				resource.NewVersion(testPullRequests[1]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[6]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[1,2,3,4,6,7,8,9,12]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check supports specifying base branch",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				BaseBranch:  "develop",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				BaseBranch: "develop",
 			},
-			version:      resource.Version{},
+			version:      nil,
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[6]),
+			expected: prlist.CheckResponse{
+				prlist.NewVersion([]*models.PullRequest{testPullRequests[6]}),
 			},
 		},
 
 		{
 			description: "check correctly ignores PRs with no approved reviews when specified",
-			source: resource.Source{
-				Repository:              "itsdalmo/test-repository",
-				AccessToken:             "oauthtoken",
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
 				RequiredReviewApprovals: 1,
 			},
-			version:      resource.NewVersion(testPullRequests[8]),
+			version:      &prlist.Version{PRs: "[9]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[7]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[9]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[8]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 
 		{
 			description: "check returns latest version from a PR with at least one of the desired labels on it",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				Labels:      []string{"enhancement"},
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				Labels: []string{"enhancement"},
 			},
-			version:      resource.Version{},
+			version:      nil,
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[6]),
+			expected: prlist.CheckResponse{
+				prlist.NewVersion([]*models.PullRequest{testPullRequests[6]}),
 			},
 		},
 
 		{
 			description: "check returns latest version from a PR with a single state filter",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				States:      []githubv4.PullRequestState{githubv4.PullRequestStateClosed},
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				States: []githubv4.PullRequestState{githubv4.PullRequestStateClosed},
 			},
-			version:      resource.Version{},
+			version:      nil,
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[9]),
+			expected: prlist.CheckResponse{
+				prlist.NewVersion([]*models.PullRequest{testPullRequests[9]}),
 			},
 		},
 
 		{
 			description: "check filters out versions from a PR which do not match the state filter",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				States:      []githubv4.PullRequestState{githubv4.PullRequestStateOpen},
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				States: []githubv4.PullRequestState{githubv4.PullRequestStateOpen},
 			},
-			version:      resource.Version{},
-			pullRequests: testPullRequests[9:11],
+			version:      nil,
+			pullRequests: testPullRequests[9:12],
 			files:        [][]string{},
-			expected:     resource.CheckResponse(nil),
+			expected: prlist.CheckResponse{
+				prlist.NewVersion([]*models.PullRequest{testPullRequests[11]}),
+			},
 		},
 
 		{
 			description: "check returns versions from a PR with multiple state filters",
-			source: resource.Source{
-				Repository:  "itsdalmo/test-repository",
-				AccessToken: "oauthtoken",
-				States:      []githubv4.PullRequestState{githubv4.PullRequestStateClosed, githubv4.PullRequestStateMerged},
+			source: prlist.Source{
+				GithubConfig: models.GithubConfig{
+					Repository: "itsdalmo/test-repository",
+				},
+				CommonConfig: models.CommonConfig{
+					AccessToken: "oauthtoken",
+				},
+				States: []githubv4.PullRequestState{githubv4.PullRequestStateClosed, githubv4.PullRequestStateMerged},
 			},
-			version:      resource.NewVersion(testPullRequests[11]),
+			version:      &prlist.Version{PRs: "[12]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
 			pullRequests: testPullRequests,
 			files:        [][]string{},
-			expected: resource.CheckResponse{
-				resource.NewVersion(testPullRequests[9]),
-				resource.NewVersion(testPullRequests[10]),
+			expected: prlist.CheckResponse{
+				prlist.Version{PRs: "[12]", Timestamp: time.Now().Add(-1 * time.Hour).Format("2006-01-02 15:04:05")},
+				prlist.Version{PRs: "[10,11]", Timestamp: time.Now().Format("2006-01-02 15:04:05")},
 			},
 		},
 	}
@@ -267,7 +337,7 @@ func TestCheck(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			github := new(fakes.FakeGithub)
-			pullRequests := []*resource.PullRequest{}
+			pullRequests := []*models.PullRequest{}
 			filterStates := []githubv4.PullRequestState{githubv4.PullRequestStateOpen}
 			if len(tc.source.States) > 0 {
 				filterStates = tc.source.States
@@ -286,8 +356,8 @@ func TestCheck(t *testing.T) {
 				github.ListModifiedFilesReturnsOnCall(i, file, nil)
 			}
 
-			input := resource.CheckRequest{Source: tc.source, Version: tc.version}
-			output, err := resource.Check(input, github)
+			input := prlist.CheckRequest{Source: tc.source, Version: tc.version}
+			output, err := prlist.Check(input, github)
 
 			if assert.NoError(t, err) {
 				assert.Equal(t, tc.expected, output)
@@ -342,7 +412,7 @@ func TestContainsSkipCI(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got := resource.ContainsSkipCI(tc.message)
+			got := prlist.ContainsSkipCI(tc.message)
 			assert.Equal(t, tc.want, got)
 		})
 	}
@@ -408,7 +478,7 @@ func TestFilterPath(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			got, err := resource.FilterPath(tc.files, tc.pattern)
+			got, err := prlist.FilterPath(tc.files, tc.pattern)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tc.want, got)
 			}
@@ -476,7 +546,7 @@ func TestFilterIgnorePath(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
-			got, err := resource.FilterIgnorePath(tc.files, tc.pattern)
+			got, err := prlist.FilterIgnorePath(tc.files, tc.pattern)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tc.want, got)
 			}
@@ -537,13 +607,13 @@ func TestIsInsidePath(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.description, func(t *testing.T) {
 			for _, expectedChild := range tc.expectChildren {
-				if !resource.IsInsidePath(tc.parent, expectedChild) {
+				if !prlist.IsInsidePath(tc.parent, expectedChild) {
 					t.Errorf("Expected \"%s\" to be inside \"%s\"", expectedChild, tc.parent)
 				}
 			}
 
 			for _, expectedNotChild := range tc.expectNotChildren {
-				if resource.IsInsidePath(tc.parent, expectedNotChild) {
+				if prlist.IsInsidePath(tc.parent, expectedNotChild) {
 					t.Errorf("Expected \"%s\" to not be inside \"%s\"", expectedNotChild, tc.parent)
 				}
 			}

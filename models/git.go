@@ -1,19 +1,18 @@
-package resource
+package models
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
 
 // Git interface for testing purposes.
+//
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fakes/fake_git.go . Git
 type Git interface {
 	Init(*string) error
@@ -281,23 +280,7 @@ func (g *GitClient) Rebase(baseRef string, headSha string, submodules bool) erro
 
 // GitCryptUnlock unlocks the repository using git-crypt
 func (g *GitClient) GitCryptUnlock(base64key string) error {
-	keyDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory")
-	}
-	defer os.RemoveAll(keyDir)
-	decodedKey, err := base64.StdEncoding.DecodeString(base64key)
-	if err != nil {
-		return fmt.Errorf("failed to decode git-crypt key")
-	}
-	keyPath := filepath.Join(keyDir, "git-crypt-key")
-	if err := ioutil.WriteFile(keyPath, decodedKey, os.FileMode(0600)); err != nil {
-		return fmt.Errorf("failed to write git-crypt key to file: %s", err)
-	}
-	if err := g.command("git-crypt", "unlock", keyPath).Run(); err != nil {
-		return fmt.Errorf("git-crypt unlock failed: %s", err)
-	}
-	return nil
+	return fmt.Errorf("GitCrypt Unsupported")
 }
 
 // Endpoint takes an uri and produces an endpoint with the login information baked in.

@@ -1,4 +1,4 @@
-package resource
+package models
 
 import (
 	"context"
@@ -37,6 +37,7 @@ func (config GithubConfig) RepositoryURL() string {
 }
 
 // Github for testing purposes.
+//
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fakes/fake_github.go . Github
 type Github interface {
 	ListPullRequests([]githubv4.PullRequestState) ([]*PullRequest, error)
@@ -126,8 +127,10 @@ func (m *GithubClient) ListPullRequests(prStates []githubv4.PullRequestState) ([
 					Node struct {
 						PullRequestObject
 						Reviews struct {
-							TotalCount int
-						} `graphql:"reviews(states: $prReviewStates)"`
+							Nodes []struct {
+								AuthorCanPushToRepository bool
+							}
+						} `graphql:"reviews(last: $prReviewsLast,states: $prReviewStates)"`
 						Commits struct {
 							Edges []struct {
 								Node struct {
@@ -156,6 +159,7 @@ func (m *GithubClient) ListPullRequests(prStates []githubv4.PullRequestState) ([
 		"repositoryOwner": githubv4.String(m.Owner),
 		"repositoryName":  githubv4.String(m.Repository),
 		"prFirst":         githubv4.Int(100),
+		"prReviewsLast":   githubv4.Int(100),
 		"prStates":        prStates,
 		"prCursor":        (*githubv4.String)(nil),
 		"commitsLast":     githubv4.Int(1),
@@ -170,6 +174,12 @@ func (m *GithubClient) ListPullRequests(prStates []githubv4.PullRequestState) ([
 		}
 		for _, p := range query.Repository.PullRequests.Edges {
 			labels := make([]LabelObject, len(p.Node.Labels.Edges))
+			numApprovals := 0
+			for _, review := range p.Node.Reviews.Nodes {
+				if review.AuthorCanPushToRepository {
+					numApprovals++
+				}
+			}
 			for _, l := range p.Node.Labels.Edges {
 				labels = append(labels, l.Node.LabelObject)
 			}
@@ -178,7 +188,7 @@ func (m *GithubClient) ListPullRequests(prStates []githubv4.PullRequestState) ([
 				response = append(response, &PullRequest{
 					PullRequestObject:   p.Node.PullRequestObject,
 					Tip:                 c.Node.Commit,
-					ApprovedReviewCount: p.Node.Reviews.TotalCount,
+					ApprovedReviewCount: numApprovals,
 					Labels:              labels,
 				})
 			}
