@@ -367,11 +367,6 @@ func (m *GithubClient) DeletePreviousComments(prNumber int, bodyMatcherForDelete
 					return err
 				}
 			}
-
-			_, err := m.V3.Issues.DeleteComment(context.TODO(), m.Owner, m.Repository, e.Node.DatabaseId)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
