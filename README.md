@@ -199,6 +199,7 @@ empty commit to the PR*.
 | `base_context`             | No       | `concourse-ci`                       | Base context (prefix) used for the status context. Defaults to `concourse-ci`.                                                                                |
 | `context`                  | No       | `unit-test`                          | A context to use for the status, which is prefixed by `base_context`. Defaults to `"status"`.                                                                 |
 | `comment`                  | No       | `hello world!`                       | A comment to add to the pull request.                                                                                                                         |
+| `comment_file`             | No       | `my-output/comment.txt`              | Path to file containing a comment to add to the pull request (e.g. output of `terraform plan`).                                                               |
 | `target_url`               | No       | `$ATC_EXTERNAL_URL/builds/$BUILD_ID` | The target URL for the status, where users are sent when clicking details (defaults to the Concourse build page).                                             |
 | `description`              | No       | `Concourse CI build failed`          | The description status on the specified pull request.                                                                                                         |
 | `delete_previous_comments` | No       | `true`                               | Boolean. Previous comments made on the pull request by this resource will be deleted before making the new comment. Useful for removing outdated information. |
@@ -206,7 +207,7 @@ empty commit to the PR*.
 | `override_version_pr`      | No       | `Concourse CI`                       | String. The PR number of PR to update status and/or comment on. Must be set if `override_version_commit` is set. Useful when you want to update status/comment on a PR different than the one you have checked out. |
 | `override_version_commit`  | No       | `Concourse CI`                       | String. The HEAD SHA of PR to update status and/or comment on. Must be set if `override_version_pr` is set. Useful when you want to update status/comment on a PR different than the one you have checked out. |
 
-Note that `comment`, `context,` and `target_url` will all expand environment variables, so in the examples above `$ATC_EXTERNAL_URL` will be replaced by the public URL of the Concourse ATCs.
+Note that `comment`, `comment_file`, `context,` and `target_url` will all expand environment variables, so in the examples above `$ATC_EXTERNAL_URL` will be replaced by the public URL of the Concourse ATCs.
 See https://concourse-ci.org/implementing-resource-types.html#resource-metadata for more details about metadata that is available via environment variables.
 
 ## Example
